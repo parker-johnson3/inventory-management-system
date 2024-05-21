@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.8.8' // Or the latest version
+    implementation 'mysql:mysql-connector-java:8.0.28'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testImplementation "org.mockito:mockito-inline:5.2.0"
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.11.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task run (type: JavaExec) {
+    description = 'Runs the main method in RepositoryController class'
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.cs506.project.RepositoryController'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.cs506.project.Main'
+    }
+
+    archiveName 'ProxyServer.jar'
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

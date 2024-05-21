@@ -1,0 +1,12 @@
+[{
+  "type": "CREATE",
+  "entityName": "Airplane",
+  "limit": 0,
+  "requestingAllDetails": "true",
+  "entities": []
+},
+
+{
+  "entities": [],
+  "error": "There was an issue processing your request. Ensure your request is a valid SocketServerRequest."
+}]

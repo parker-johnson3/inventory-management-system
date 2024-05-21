@@ -1,0 +1,91 @@
+services:
+  frontend:
+    container_name: frontend
+    image: frontend
+    build:
+      context: src/frontend
+      dockerfile: Node.Dockerfile
+    networks:
+      - front_end
+    expose:
+      - 5000
+    ports:
+      - "80:3000"
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /src
+          ignore:
+            - ./frontend/node_modules
+            - ./frontend/artifacts
+
+  web_server:
+    container_name: web_server
+    image: web_server
+    build:
+      context: src/python_web_api
+      dockerfile: Python.Dockerfile
+    command: ["python3", "app.py", "-m"]
+    healthcheck:
+      test: curl --fail http://localhost:5000/healthcheck || exit 1
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 5s
+    networks:
+      - front_end
+      - back_end
+    expose:
+      - 5000
+      - 8000
+    ports:
+      - "5000:5000"
+    develop:
+      watch:
+        - action: sync
+          path: ./python_web_api
+          target: /src
+          ignore:
+            - ./python_web_api/artifacts
+            - ./python_web_api/.mypy_cache
+            - ./python_web_api/__pycache__
+            - ./python_web_api/src/build
+            - ./python_web_api/src/webserver.egg-info
+
+  proxy_server:
+    container_name: proxy_server
+    image: proxy_server
+    build:
+      context: src/java-socket-server
+      dockerfile: Java.Dockerfile
+    command: ["java", "-jar", "ProxyServer.jar", "-m"]
+    networks:
+      - back_end
+      # - database
+    expose:
+      - 8000
+      - 3306
+    develop:
+      watch:
+        - action: sync
+          path: ./java-socket-server
+          target: /src
+          ignore:
+            - ./java-socket-server/artifacts
+
+  sql_server:
+    container_name: sql_server
+    image: sql_server
+    build:
+      context: src/mysql-db-repo
+      dockerfile: SQL.Dockerfile
+    networks:
+      - database
+    expose:
+      - 3306
+
+networks:
+  front_end:
+  back_end:
+  database:

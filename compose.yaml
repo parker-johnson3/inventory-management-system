@@ -1,0 +1,108 @@
+services:
+  frontend:
+    container_name: frontend
+    image: frontend
+    build:
+      context: src/frontend
+      dockerfile: Node.Dockerfile
+    volumes:
+      - frontend_artifacts:/src/artifacts
+    depends_on:
+      web_server:
+        # restart: true
+        # required: true
+        condition: service_healthy
+    # restart: on-failure:5
+    healthcheck:
+      test: curl --fail http://localhost:3000/healthcheck || exit 1
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 5s
+    networks:
+      - front_end
+    expose:
+      - 5000
+    ports:
+      - "80:3000"
+
+  web_server:
+    container_name: web_server
+    image: web_server
+    build:
+      context: src/python_web_api
+      dockerfile: Python.Dockerfile
+    volumes:
+      - python_web_api_artifacts:/src/artifacts
+    depends_on:
+      proxy_server:
+        # restart: true
+        # required: true
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:5000/healthcheck || exit 1
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 5s
+    # restart: on-failure:5
+    networks:
+      - front_end
+      - back_end
+    expose:
+      - 5000
+      - 8000
+    ports:
+      - "5000:5000"
+
+  proxy_server:
+    container_name: proxy_server
+    image: proxy_server
+    build:
+      context: src/java-socket-server
+      dockerfile: Java.Dockerfile
+    volumes:
+      - java-socket-server_artifacts:/src/artifacts
+    healthcheck:
+      test: "bash -c 'printf \"healthcheck\" > /dev/tcp/127.0.0.1/8000; exit $?;'"
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      sql_server:
+    #     restart: true
+    #     required: true
+        condition: service_healthy
+    # restart: on-failure:5
+    networks:
+      - back_end
+      - database
+    expose:
+      - 8000
+      - 3306
+
+  sql_server:
+    container_name: sql_server
+    image: sql_server
+    build:
+      context: src/mysql-db-repo
+      dockerfile: SQL.Dockerfile
+    volumes:
+      - mysql-db-repo_artifacts:/src/artifacts
+    # restart: on-failure:5
+    networks:
+      - database
+    expose:
+      - 3306
+
+volumes:
+  frontend_artifacts:
+  java-socket-server_artifacts:
+  mysql-db-repo_artifacts:
+  python_web_api_artifacts:
+
+networks:
+  front_end:
+  back_end:
+  database:
